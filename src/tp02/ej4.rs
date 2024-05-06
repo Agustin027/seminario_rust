@@ -1,8 +1,14 @@
-pub fn cantidad_impares(arreglo: [i32; 10]) -> i32 {
-    return arreglo
+pub fn cantidad_impares(arreglo: [i32; 3]) -> i32 {
+    arreglo
         .iter()
         .filter(|&num| num % 2 != 0)
         .count()
         .try_into()
-        .unwrap();
+        .unwrap()
+}
+
+#[test]
+fn test_cantidad_impares() {
+    let arreglo = [1, 3, 2];
+    assert_eq!(cantidad_impares(arreglo), 2);
 }
