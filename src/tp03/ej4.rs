@@ -30,3 +30,33 @@ impl Triangulo {
         (s * (s - self.lado1) * (s - self.lado2) * (s - self.lado3)).sqrt()
     }
 }
+
+#[test]
+fn constructor() {
+    let triangulo = Triangulo::new(3.0, 4.0, 5.0);
+    assert_eq!(triangulo.lado1, 3.0);
+    assert_eq!(triangulo.lado2, 4.0);
+    assert_eq!(triangulo.lado3, 5.0);
+}
+
+#[test]
+fn tipo() {
+    let triangulo = Triangulo::new(3.0, 4.0, 5.0);
+    assert_eq!(triangulo.determinar_tipo(), "escaleno".to_string());
+    let triangulo = Triangulo::new(3.0, 3.0, 3.0);
+    assert_eq!(triangulo.determinar_tipo(), "equilátero".to_string());
+    let triangulo = Triangulo::new(3.0, 3.0, 4.0);
+    assert_eq!(triangulo.determinar_tipo(), "isósceles".to_string());
+}
+
+#[test]
+fn perimetro() {
+    let triangulo = Triangulo::new(3.0, 4.0, 5.0);
+    assert_eq!(triangulo.calcular_perimetro(), 12.0);
+}
+
+#[test]
+fn area() {
+    let triangulo = Triangulo::new(3.0, 4.0, 5.0);
+    assert_eq!(triangulo.calcular_area(), 6.0);
+}

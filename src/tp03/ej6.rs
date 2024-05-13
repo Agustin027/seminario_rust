@@ -54,3 +54,26 @@ impl Estudiante {
         Some(min_nota)
     }
 }
+
+#[test]
+fn constructor() {
+    let examen = Examen::new("Matemmatica".to_string(), 10.0);
+    assert_eq!(examen.nombre, "Matemmatica".to_string());
+    assert_eq!(examen.nota, 10.0);
+}
+
+#[test]
+fn test() {
+    let examen1 = Examen::new("Matemmatica".to_string(), 10.0);
+    let examen2 = Examen::new("Lengua".to_string(), 6.0);
+    let examen3 = Examen::new("Historia".to_string(), 8.0);
+    let estudiante = Estudiante {
+        nombre: "Juan".to_string(),
+        id: 123,
+        examenes: vec![examen1, examen2, examen3],
+    };
+
+    assert_eq!(estudiante.obtener_promedio(), Some(8.0));
+    assert_eq!(estudiante.obtener_calificacion_mas_alta(), Some(10.0));
+    assert_eq!(estudiante.obtener_calificacion_mas_baja(), Some(6.0));
+}

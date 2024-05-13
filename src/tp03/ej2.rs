@@ -22,7 +22,33 @@ impl Rectangulo {
 }
 
 #[test]
-fn testt() {
-    let rect = Rectangulo::new(10.5, 10.5);
-    print!("{}", rect.es_cuadrado());
+fn constructor() {
+    let rectangulo = Rectangulo::new(10.0, 5.0);
+    assert_eq!(rectangulo.longitud, 10.0);
+    assert_eq!(rectangulo.ancho, 5.0);
+}
+
+#[test]
+fn area() {
+    let rectangulo = Rectangulo::new(10.0, 5.0);
+    assert_eq!(rectangulo.calcular_area(), 50.0);
+}
+
+#[test]
+fn perimetro() {
+    let rectangulo = Rectangulo::new(10.0, 5.0);
+    assert_eq!(rectangulo.calcular_perimetro(), 30.0);
+}
+
+#[test]
+fn cuadrado() {
+    let rectangulo = Rectangulo::new(10.0, 5.0);
+    assert_eq!(rectangulo.es_cuadrado(), false);
+    let cuadrado = Rectangulo::new(10.0, 10.0);
+    assert_eq!(cuadrado.es_cuadrado(), true);
+}
+#[test] 
+fn area_cero() {
+    let rectangulo = Rectangulo::new(0.0, 5.0);
+    assert_eq!(rectangulo.calcular_area(), 0.0);
 }

@@ -35,11 +35,32 @@ impl Producto {
 }
 
 #[test]
-fn test() {
-    let producto = Producto::new(String::from("Producto1"), 100.0, 12345);
+fn constructor() {
+    let producto = Producto::new("Producto1".to_string(), 100.0, 123);
+    assert_eq!(producto.nombre, "Producto1".to_string());
+    assert_eq!(producto.precioB, 100.0);
+    assert_eq!(producto.id, 123);
+}
 
-    println!(
-        "Precio total: ${}",
-        producto.calcular_precio_total(Some(10.0), Some(20.0))
-    );
+#[test]
+fn impuestos() {
+    let producto = Producto::new("Producto1".to_string(), 100.0, 123);
+    assert_eq!(producto.calcular_impuestos(Some(10.0)), 10.0);
+    assert_eq!(producto.calcular_impuestos(None), 0.0);
+}
+
+#[test]
+fn descuentos() {
+    let producto = Producto::new("Producto1".to_string(), 100.0, 123);
+    assert_eq!(producto.aplicar_descuento(Some(10.0)), 10.0);
+    assert_eq!(producto.aplicar_descuento(None), 0.0);
+}
+
+#[test]
+fn total() {
+    let producto = Producto::new("Producto1".to_string(), 100.0, 123);
+    assert_eq!(producto.calcular_precio_total(Some(10.0), Some(20.0)), 90.0);
+    assert_eq!(producto.calcular_precio_total(None, Some(20.0)), 80.0);
+    assert_eq!(producto.calcular_precio_total(Some(10.0), None), 110.0);
+    assert_eq!(producto.calcular_precio_total(None, None), 100.0);
 }

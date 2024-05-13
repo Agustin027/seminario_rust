@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq, Eq, Hash, Copy, Clone)]
+#[derive(Debug, Clone, Hash)]
 pub struct Fecha {
     dia: u32,
     mes: u32,
@@ -181,6 +181,9 @@ impl Fecha {
         }
         false
     }
+    pub fn equals(&self, fecha: &Fecha) -> bool {
+        self.dia == fecha.dia && self.mes == fecha.mes && self.año == fecha.año
+    }
 }
 
 #[cfg(test)]
@@ -195,4 +198,52 @@ mod tests {
         fecha.restar_dias(7998);
         println!("Dia {}, Mes {}, Año {}", fecha.dia, fecha.mes, fecha.año);
     }
+}
+
+#[test]
+fn constructor() {
+    let fecha = Fecha::new(7, 6, 2002);
+    assert_eq!(fecha.dia, 7);
+    assert_eq!(fecha.mes, 6);
+    assert_eq!(fecha.año, 2002);
+}
+
+#[test]
+fn fecha_valida() {
+    let fecha = Fecha::new(7, 6, 2002);
+    assert_eq!(fecha.es_fecha_valida(), true);
+}
+
+#[test]
+fn bisiesto() {
+    let fecha = Fecha::new(7, 6, 2002);
+    assert_eq!(fecha.es_bisiesto(), false);
+    let fecha = Fecha::new(7, 6, 2000);
+    assert_eq!(fecha.es_bisiesto(), true);
+}
+#[test]
+fn sumar_y_restar_dias() {
+    let mut fecha = Fecha::new(7, 6, 2002);
+    fecha.sumar_dias(8010);
+    assert_eq!(fecha.dia, 12);
+    assert_eq!(fecha.mes, 5);
+    assert_eq!(fecha.año, 2024);
+
+    fecha.restar_dias(8011);
+    assert_eq!(fecha.dia, 7);
+    assert_eq!(fecha.mes, 6);
+    assert_eq!(fecha.año, 2002);
+}
+
+#[test]
+fn mayor() {
+    let fecha1 = Fecha::new(7, 6, 2002);
+    let fecha2 = Fecha::new(7, 6, 2002);
+    assert_eq!(fecha1.es_mayor(fecha2), false);
+    let fecha2 = Fecha::new(7, 6, 2001);
+    assert_eq!(fecha1.es_mayor(fecha2), true);
+    let fecha2 = Fecha::new(7, 5, 2002);
+    assert_eq!(fecha1.es_mayor(fecha2), true);
+    let fecha2 = Fecha::new(6, 6, 2002);
+    assert_eq!(fecha1.es_mayor(fecha2), true);
 }

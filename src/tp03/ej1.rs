@@ -35,11 +35,44 @@ impl Persona {
 }
 
 #[test]
-fn ej1() {
-    let mut persona1 = Persona::new("Lionel".to_string(), 36, Some("Direc".to_string()));
 
-    println!("{} edad {}", persona1.to_string(), persona1.obtener_edad());
-    persona1.to_string();
-    persona1.actualizar_direccion(Some("Nueva direccion".to_string()));
-    println!("{} edad {}", persona1.to_string(), persona1.obtener_edad());
+fn constructor() {
+    let persona = Persona::new("Messi".to_string(), 36, Some("91 Compass Lane".to_string()));
+    assert!(persona.nombre == "Messi".to_string());
+    assert!(persona.edad == 36);
+    assert!(persona.direccion == Some("91 Compass Lane".to_string()));
+}
+
+#[test]
+fn to_string() {
+    let persona = Persona::new("Messi".to_string(), 36, Some("91 Compass Lane".to_string()));
+    assert!(
+        persona.to_string() == "Nombre: Messi, Edad: 36, Dirección: 91 Compass Lane".to_string()
+    );
+}
+#[test]
+fn edad() {
+    let persona = Persona::new("Messi".to_string(), 36, Some("91 Compass Lane".to_string()));
+    assert!(persona.obtener_edad() == 36);
+}
+
+#[test]
+fn actualizar_direccion() {
+    let mut persona = Persona::new("Messi".to_string(), 36, Some("91 Compass Lane".to_string()));
+    persona.actualizar_direccion(Some("Estado de Israel 525".to_string()));
+    assert!(persona.direccion == Some("Estado de Israel 525".to_string()));
+}
+
+#[test]
+
+fn sin_direccion() {
+    let persona = Persona::new("Messi".to_string(), 36, None);
+    assert!(persona.direccion == None);
+}
+
+#[test]
+fn actualizar_direccion_none() {
+    let mut persona = Persona::new("Messi".to_string(), 36, Some("91 Compass Lane".to_string()));
+    persona.actualizar_direccion(None);
+    assert!(persona.direccion == None);
 }
