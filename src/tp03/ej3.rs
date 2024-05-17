@@ -187,19 +187,6 @@ impl Fecha {
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_fecha1() {
-        let mut fecha = Fecha::new(7, 6, 2002);
-
-        fecha.sumar_dias(7998);
-        fecha.restar_dias(7998);
-        println!("Dia {}, Mes {}, Año {}", fecha.dia, fecha.mes, fecha.año);
-    }
-}
-
 #[test]
 fn constructor() {
     let fecha = Fecha::new(7, 6, 2002);

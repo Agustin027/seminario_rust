@@ -174,7 +174,7 @@ fn test_constructor_prestamo() {
         telefono: 123,
         correo: "correo".to_string(),
     };
-    let fecha = Fecha::new(1, 1, 2021);
+    let fecha = Fecha::new(7, 6, 2024);
     let prestamo = Prestamo::new(libro.clone(), cliente.clone(), fecha.clone());
     assert_eq!(prestamo.libro.equals(&libro), true);
     assert_eq!(prestamo.cliente.equals(&cliente), true);
@@ -257,7 +257,7 @@ fn test_contar_prestamos_cliente() {
         correo: "correo".to_string(),
     };
 
-    let fecha = Fecha::new(1, 1, 2021);
+    let fecha = Fecha::new(7, 6, 2024);
 
     let mut biblioteca = Biblioteca {
         nombre: "Biblioteca".to_string(),
@@ -367,14 +367,14 @@ fn test_prestamo_vencidos() {
 
     biblioteca.libros_disponibles.insert(libro.isbn, 10);
 
-    let fecha = Fecha::new(1, 1, 2024);
-    let fecha_vencimiento = Fecha::new(1, 2, 2024);
+    let fecha = Fecha::new(7, 6, 2024);
+    let fecha_vencimiento = Fecha::new(7, 7, 2024);
     biblioteca.realizar_prestamo(libro.clone(), cliente.clone(), fecha_vencimiento.clone());
 
     let prestamos = biblioteca.prestamos_vencidos(fecha);
     assert_eq!(prestamos.len(), 0);
 
-    let fecha = Fecha::new(1, 3, 2024);
+    let fecha = Fecha::new(7, 8, 2024);
     let prestamos = biblioteca.prestamos_vencidos(fecha);
 
     assert_eq!(prestamos.len(), 1);
