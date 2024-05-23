@@ -1,0 +1,17 @@
+###########################################################################
+# libssh2 installation details
+###########################################################################
+
+prefix=F:\Facu\2do Año\seminario_rust\src\coverage\debug\build\libssh2-sys-f3242cede22e69d9\out
+exec_prefix=
+libdir=F:\Facu\2do Año\seminario_rust\src\coverage\debug\build\libssh2-sys-f3242cede22e69d9\out\lib
+includedir=F:\Facu\2do Año\seminario_rust\src\coverage\debug\build\libssh2-sys-f3242cede22e69d9\out\include
+
+Name: libssh2
+URL: https://www.libssh2.org/
+Description: Library for SSH-based communication
+Version: 1.10.1_DEV
+Requires.private: 
+Libs: -L${libdir} -lssh2 
+Libs.private: 
+Cflags: -I${includedir}

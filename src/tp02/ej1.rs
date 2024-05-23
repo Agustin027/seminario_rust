@@ -4,5 +4,5 @@ pub fn es_par(num: i32) -> bool {
 
 #[test]
 fn test_es_par() {
-    assert_eq!(true, es_par(3));
+    assert_eq!(true, es_par(2));
 }

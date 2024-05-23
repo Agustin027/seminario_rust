@@ -414,3 +414,10 @@ impl XYZ {
         }
     }
 }
+
+/*
+Esto se hace con las transacciones
+➢ Saber cual es la criptomoneda que más cantidad de ventas tiene
+➢ Saber cual es la criptomoneda que más cantidad de compras tiene
+➢ Saber cual es la criptomoneda que más volumen de ventas tiene
+➢ Saber cual es la criptomoneda que más volumen de compras tiene */
