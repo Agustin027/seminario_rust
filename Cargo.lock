@@ -1386,6 +1386,8 @@ version = "0.1.0"
 dependencies = [
  "cargo-tarpaulin",
  "rand",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

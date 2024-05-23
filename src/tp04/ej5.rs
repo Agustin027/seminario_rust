@@ -413,11 +413,111 @@ impl XYZ {
             self.transacciones.push(transaccion);
         }
     }
-}
 
-/*
-Esto se hace con las transacciones
-➢ Saber cual es la criptomoneda que más cantidad de ventas tiene
-➢ Saber cual es la criptomoneda que más cantidad de compras tiene
-➢ Saber cual es la criptomoneda que más volumen de ventas tiene
-➢ Saber cual es la criptomoneda que más volumen de compras tiene */
+    fn cripto_mas_vendida(&self) -> String {
+        let mut contador_cripto: BTreeMap<String, u32> = BTreeMap::new();
+
+        for venta in self.transacciones.clone() {
+            if venta.tipo == "venta cripto" {
+                let cant = contador_cripto
+                    .entry(venta.cripto.prefijo.clone())
+                    .or_insert(0);
+                *cant += 1;
+            }
+        }
+
+        let mut max_cripto = None;
+        let mut max_value = 0;
+
+        for (cripto, &value) in &contador_cripto {
+            if value > max_value {
+                max_value = value;
+                max_cripto = Some(cripto);
+            }
+        }
+
+        if let Some(cripto) = max_cripto {
+            return cripto.clone();
+        } else {
+            return "".to_string();
+        }
+    }
+
+    fn cripto_mas_comprada(&self) -> String {
+        let mut contador_cripto: BTreeMap<String, u32> = BTreeMap::new();
+
+        for compra in self.transacciones.clone() {
+            if compra.tipo == "compra cripto" {
+                let cant = contador_cripto
+                    .entry(compra.cripto.prefijo.clone())
+                    .or_insert(0);
+                *cant += 1;
+            }
+        }
+
+        let mut max_cripto = None;
+        let mut max_value = 0;
+
+        for (cripto, &value) in &contador_cripto {
+            if value > max_value {
+                max_value = value;
+                max_cripto = Some(cripto);
+            }
+        }
+
+        if let Some(cripto) = max_cripto {
+            return cripto.clone();
+        } else {
+            return "".to_string();
+        }
+    }
+
+    fn cripto_mas_volumen_venta(&self) -> String {
+        let mut contador_cripto: BTreeMap<String, f64> = BTreeMap::new();
+        for venta in self.transacciones.clone() {
+            if venta.tipo == "venta cripto" {
+                let cant = contador_cripto
+                    .entry(venta.cripto.prefijo.clone())
+                    .or_insert(0.0);
+                *cant += venta.monto;
+            }
+        }
+        let mut max_cripto = None;
+        let mut max_value = 0.0;
+        for (cripto, &value) in &contador_cripto {
+            if value > max_value {
+                max_value = value;
+                max_cripto = Some(cripto);
+            }
+        }
+        if let Some(cripto) = max_cripto {
+            return cripto.clone();
+        } else {
+            return "".to_string();
+        }
+    }
+    fn cripto_mas_volumen_compra(&self) -> String {
+        let mut contador_cripto: BTreeMap<String, f64> = BTreeMap::new();
+        for compra in self.transacciones.clone() {
+            if compra.tipo == "compra cripto" {
+                let cant = contador_cripto
+                    .entry(compra.cripto.prefijo.clone())
+                    .or_insert(0.0);
+                *cant += compra.monto;
+            }
+        }
+        let mut max_cripto = None;
+        let mut max_value = 0.0;
+        for (cripto, &value) in &contador_cripto {
+            if value > max_value {
+                max_value = value;
+                max_cripto = Some(cripto);
+            }
+        }
+        if let Some(cripto) = max_cripto {
+            return cripto.clone();
+        } else {
+            return "".to_string();
+        }
+    }
+}
