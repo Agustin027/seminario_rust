@@ -85,3 +85,12 @@ fn test_cero() {
         0.0
     );
 }
+/* Feedback del profe
+"Hola Agustin, la nota del entregable#1 es 7.50 te paso dar el feedback del mismo:
+1- uso excesivo de println! Esto lo comente en reiteradas oportunidades, solo lo usamos a modo educativo.
+2- no es necesario que haya codigo en main o que este el main eso no se pedia
+3- la funcion calc_precio_con_impuestos_zip no se utiliza en la funcion pedida y no logro comprender porque esta en la v2
+4- bien que hayas sumado mas casos de tests en la v2
+5- en cuanto al tamano de los arrays que sean fijos hubiese sido mejor pasar la ref & para que no quede acotado al size
+6- idem anterior con el for podrias utilizar el .len()
+"  */

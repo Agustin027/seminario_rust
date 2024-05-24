@@ -11,6 +11,19 @@ struct Usuario {
     balance_crypto: BTreeMap<String, f32>,
     balance_fiat: f32,
 }
+trait IniciarBalance {
+    fn iniciar_balance() -> BTreeMap<String, f32>;
+}
+
+impl IniciarBalance for BTreeMap<String, f32> {
+    fn iniciar_balance() -> BTreeMap<String, f32> {
+        let mut balance = BTreeMap::new();
+        balance.insert("BTC".to_string(), 0.0);
+        balance.insert("ETH".to_string(), 0.0);
+        balance.insert("USDT".to_string(), 0.0);
+        balance
+    }
+}
 
 impl Usuario {
     fn new(nombre: String, apellido: String, email: String, dni: String) -> Self {
@@ -20,11 +33,13 @@ impl Usuario {
             email,
             dni,
             kyc: false,
-            balance_crypto: BTreeMap::new(),
+            balance_crypto: BTreeMap::iniciar_balance(),
             balance_fiat: 0.0,
         }
     }
-
+    fn kyc(&mut self) {
+        self.kyc = true;
+    }
     fn validar_usuario_compra(self, fiat: f32) -> bool {
         if self.balance_fiat >= fiat && self.kyc {
             true
@@ -45,7 +60,21 @@ impl Usuario {
     }
 
     fn validar_usuario_retiro_fiat(self, monto: f32) -> bool {
-        false
+        if self.balance_fiat >= monto && self.kyc {
+            true
+        } else {
+            false
+        }
+    }
+    fn ingresar_dinero(&mut self, ingreso: f32) {
+        self.balance_fiat += ingreso;
+    }
+    // esto lo puse para ayudar a testear y no tener que hacer una compra para testear
+    fn aumentar_balance_crypto(&mut self, cripto: Criptomoneda, monto: f32) {
+        self.balance_crypto
+            .entry(cripto.prefijo.clone())
+            .and_modify(|c| *c += monto)
+            .or_insert(monto);
     }
 }
 
@@ -301,7 +330,12 @@ impl XYZ {
                         .entry(cripto.prefijo.clone())
                         .and_modify(|c| *c += cant_crypto);
                 });
+            println!("cantidad de criptoooo:{:?}", cant_crypto);
 
+            println!(
+                "balanceeeee:{:?}",
+                self.usuarios.get(&user.dni).unwrap().balance_crypto
+            );
             let transaccion = Transaccion::transaccion_compra(
                 "fecha".to_string(),
                 user,
@@ -520,4 +554,372 @@ impl XYZ {
             return "".to_string();
         }
     }
+
+    fn pushear_transaccion(&mut self, t: Transaccion) {
+        self.transacciones.push(t);
+    }
+}
+
+#[test]
+fn test_validar_usuario() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    assert_eq!(usuario.kyc, false);
+    usuario.kyc();
+    assert_eq!(usuario.kyc, true);
+
+    usuario.ingresar_dinero(100.0);
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 500.0);
+
+    assert_eq!(usuario.clone().validar_usuario_compra(100.0), true);
+    assert_eq!(usuario.clone().validar_usuario_venta(100.0, cripto), true);
+    assert_eq!(usuario.validar_usuario_retiro_fiat(100.0), true);
+}
+
+#[test]
+fn test_transacciones() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let blockchain = Blockchain::new("Bitcoin".to_string(), "BTC".to_string());
+
+    let transaccion_ingreso = Transaccion::transaccion_ingreso(
+        "fecha".to_string(),
+        "ingreso".to_string(),
+        100.0,
+        usuario.clone(),
+    );
+    let transaccion_compra = Transaccion::transaccion_compra(
+        "fecha".to_string(),
+        usuario.clone(),
+        cripto.clone(),
+        "compra cripto".to_string(),
+        100.0,
+        cripto.cotizacion() as f64,
+    );
+
+    let transaccion_venta = Transaccion::transaccion_venta(
+        "fecha".to_string(),
+        usuario.clone(),
+        cripto.clone(),
+        "venta cripto".to_string(),
+        100.0,
+        cripto.cotizacion() as f64,
+    );
+
+    let transaccion_retiro = Transaccion::transaccion_retiro(
+        "fecha".to_string(),
+        usuario.clone(),
+        "retiro".to_string(),
+        blockchain.clone(),
+        blockchain.generar_hash(),
+        100.0,
+        cripto.cotizacion() as f64,
+    );
+
+    let transaccion_recibir = Transaccion::transaccion_recibir(
+        "fecha".to_string(),
+        usuario.clone(),
+        "recibir".to_string(),
+        blockchain.clone(),
+        cripto.clone(),
+        100.0,
+        cripto.cotizacion() as f64,
+    );
+    let transaccion_retirar_fiat = Transaccion::transaccion_retirar_fiat(
+        "fecha".to_string(),
+        usuario.clone(),
+        "retirar".to_string(),
+        100.0,
+        MedioPago::MercadoPago,
+    );
+
+    plataforma.pushear_transaccion(transaccion_ingreso.clone());
+    plataforma.pushear_transaccion(transaccion_compra.clone());
+    plataforma.pushear_transaccion(transaccion_venta.clone());
+    plataforma.pushear_transaccion(transaccion_retiro.clone());
+    plataforma.pushear_transaccion(transaccion_recibir.clone());
+    plataforma.pushear_transaccion(transaccion_retirar_fiat.clone());
+
+    assert_eq!(plataforma.transacciones.len(), 6);
+    assert_eq!(plataforma.transacciones[0], transaccion_ingreso);
+    assert_eq!(plataforma.transacciones[1], transaccion_compra);
+    assert_eq!(plataforma.transacciones[2], transaccion_venta);
+    assert_eq!(plataforma.transacciones[3], transaccion_retiro);
+    assert_eq!(plataforma.transacciones[4], transaccion_recibir);
+    assert_eq!(plataforma.transacciones[5], transaccion_retirar_fiat);
+}
+
+#[test]
+fn test_generar_hash() {
+    let blockchain = Blockchain::new("Tron".to_string(), "TRC20".to_string());
+    let hash = blockchain.generar_hash();
+    assert_eq!(hash.nombre_blockchain, "Tron".to_string());
+    assert!(hash.hash >= 0 && hash.hash < 1000);
+}
+
+#[test]
+fn test_ingresar_dinero() {
+    let usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    let mut plataforma = XYZ::new();
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.ingresar_dinero(usuario.clone(), 100.0);
+    assert_eq!(
+        plataforma.usuarios.get(&usuario.dni).unwrap().balance_fiat,
+        100.0
+    );
+}
+
+#[test]
+fn test_comprar_cripto() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.comprar_cripto(usuario.clone(), 100.0, cripto.clone());
+    let user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    let balance_cripto = user.balance_crypto.get(&cripto.prefijo).unwrap();
+    assert_eq!(user.balance_fiat, 900.0);
+    assert_eq!(*balance_cripto, 100.0 / cripto.cotizacion());
+    assert_eq!(plataforma.transacciones.len(), 1);
+}
+
+#[test]
+fn test_vender_cripto() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+
+    let user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    let balance_cripto = user.balance_crypto.get(&cripto.prefijo).unwrap();
+
+    assert_eq!(user.balance_fiat, 1000.0 + 50.0 * cripto.cotizacion());
+    assert_eq!(*balance_cripto, 50.0);
+    assert_eq!(plataforma.transacciones.len(), 1);
+}
+
+#[test]
+fn test_retirar_cripto() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let mut cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let blockchain = Blockchain::new("BNB Smart Chain".to_string(), "BEP20".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    cripto.listado_blockchain.push(blockchain.clone());
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.retirar_cripto(usuario.clone(), 50.0, cripto.clone(), blockchain.clone());
+
+    let user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    let balance_cripto = user.balance_crypto.get(&cripto.prefijo).unwrap();
+
+    assert_eq!(user.balance_fiat, 1000.0);
+    assert_eq!(*balance_cripto, 50.0);
+    assert_eq!(plataforma.transacciones.len(), 1);
+}
+
+#[test]
+fn test_recibir_cripto() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let mut cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let blockchain = Blockchain::new("BNB Smart Chain".to_string(), "BEP20".to_string());
+    cripto.listado_blockchain.push(blockchain.clone());
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+
+    let mut user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    let mut balance_cripto = user.balance_crypto.get(&cripto.prefijo).unwrap();
+
+    assert_eq!(*balance_cripto, 0.0);
+    plataforma.recibir_cripto(usuario.clone(), 50.0, cripto.clone(), blockchain.clone());
+
+    user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    balance_cripto = user.balance_crypto.get(&cripto.prefijo).unwrap();
+
+    assert_eq!(*balance_cripto, 50.0);
+    assert_eq!(plataforma.transacciones.len(), 1);
+}
+
+#[test]
+fn test_retirar_fiat() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.retirar_fiat(100.0, usuario.clone());
+
+    let user = plataforma.usuarios.get(&usuario.dni).unwrap();
+    assert_eq!(user.balance_fiat, 900.0);
+    assert_eq!(plataforma.transacciones.len(), 1);
+}
+
+#[test]
+fn test_cripto_mas_vendida() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let cripto2 = Criptomoneda::new("Ethereum".to_string(), "ETH".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    usuario.aumentar_balance_crypto(cripto2.clone(), 100.0);
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+
+    assert_eq!(plataforma.cripto_mas_vendida(), "BTC".to_string());
+}
+
+#[test]
+fn test_cripto_mas_comprada() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let cripto2 = Criptomoneda::new("Ethereum".to_string(), "ETH".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    usuario.aumentar_balance_crypto(cripto2.clone(), 100.0);
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+
+    assert_eq!(plataforma.cripto_mas_comprada(), "BTC".to_string());
+}
+
+#[test]
+fn test_cripto_mas_volumen_venta() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let cripto2 = Criptomoneda::new("Ethereum".to_string(), "ETH".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    usuario.aumentar_balance_crypto(cripto2.clone(), 100.0);
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.vender_cripto(usuario.clone(), 50.0, cripto.clone());
+
+    assert_eq!(plataforma.cripto_mas_volumen_venta(), "BTC".to_string());
+}
+
+#[test]
+fn test_cripto_mas_volumen_compra() {
+    let mut usuario = Usuario::new(
+        "Agustin".to_string(),
+        "Castillo".to_string(),
+        " ".to_string(),
+        "77777777".to_string(),
+    );
+    usuario.balance_fiat = 1000.0;
+    usuario.kyc();
+    let mut plataforma = XYZ::new();
+    let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
+    let cripto2 = Criptomoneda::new("Ethereum".to_string(), "ETH".to_string());
+    usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
+    usuario.aumentar_balance_crypto(cripto2.clone(), 100.0);
+    plataforma
+        .usuarios
+        .insert(usuario.dni.clone(), usuario.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto2.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+    plataforma.comprar_cripto(usuario.clone(), 50.0, cripto.clone());
+
+    assert_eq!(plataforma.cripto_mas_volumen_compra(), "ETH".to_string());
 }
