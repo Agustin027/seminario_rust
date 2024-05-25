@@ -1,1 +1,5 @@
+<<<<<<< HEAD
 [{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Rojo"}]{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Rojo"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Verde"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Azul"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Amarillo"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Blanco"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Negro"}
+=======
+{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Rojo"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Verde"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Azul"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Amarillo"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Blanco"}{"marca":"BMW","modelo":"Serie 3","año":1999,"preciob":10000.0,"color":"Negro"}
+>>>>>>> 8c8ff6f6c5b5d4171261919490d89663126b853a
