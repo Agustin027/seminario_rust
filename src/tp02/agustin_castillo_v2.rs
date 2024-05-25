@@ -1,3 +1,4 @@
+/* esto no tenia que estar en el entregable
 fn main() {
     //Nombre:Agustin Castillo; Dni:44130476; Legajo:20778/1; Alias: Agustin;
     let cantidades = [5, 10, 15, 20];
@@ -11,8 +12,7 @@ fn main() {
         "{}",
         calc_precio_con_impuestos_zip(cantidades, precios, porcentaje)
     );
-}
-
+}*/
 fn calcular_precio_con_impuestos(cantidades: [u32; 4], precios: [f32; 4], porcentaje: u32) -> f32 {
     let mut total = 0.0;
     let p = porcentaje as f32 / 100.0;

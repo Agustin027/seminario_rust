@@ -330,12 +330,6 @@ impl XYZ {
                         .entry(cripto.prefijo.clone())
                         .and_modify(|c| *c += cant_crypto);
                 });
-            println!("cantidad de criptoooo:{:?}", cant_crypto);
-
-            println!(
-                "balanceeeee:{:?}",
-                self.usuarios.get(&user.dni).unwrap().balance_crypto
-            );
             let transaccion = Transaccion::transaccion_compra(
                 "fecha".to_string(),
                 user,
