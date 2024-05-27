@@ -1,4 +1,4 @@
-//Falta hacer punto B y C
+//Falta hacer punto B
 use std::collections::VecDeque; // Import the VecDeque type from the collections module
 
 use super::fecha::Fecha;
@@ -26,7 +26,6 @@ struct Atencion {
     fecha: Fecha,
 }
 
-
 #[derive(Debug, Clone, PartialEq)]
 struct Mascota {
     nombre: String,
@@ -41,7 +40,6 @@ struct Dueño {
     direccion: String,
     telefono: u32,
 }
-
 
 impl Veterinaria {
     fn new(
@@ -103,7 +101,7 @@ impl Veterinaria {
     }
     fn modifcar_diagnostico(&mut self, atencion: Atencion, diagnostico: String) {
         for i in 0..self.atenciones_realizadas.len() {
-            if self.atenciones_realizadas[i]==atencion {
+            if self.atenciones_realizadas[i] == atencion {
                 self.atenciones_realizadas[i].diagnostico = diagnostico;
                 break;
             }
@@ -111,7 +109,7 @@ impl Veterinaria {
     }
     fn modificar_fecha(&mut self, atencion: Atencion, fecha: Fecha) {
         for i in 0..self.atenciones_realizadas.len() {
-            if self.atenciones_realizadas[i]==atencion {
+            if self.atenciones_realizadas[i] == atencion {
                 self.atenciones_realizadas[i].fecha = fecha;
                 break;
             }
@@ -120,7 +118,7 @@ impl Veterinaria {
 
     fn eliminar_atencion(&mut self, atencion: Atencion) {
         for i in 0..self.atenciones_realizadas.len() {
-            if self.atenciones_realizadas[i]==atencion {
+            if self.atenciones_realizadas[i] == atencion {
                 self.atenciones_realizadas.remove(i);
                 break;
             }
@@ -164,7 +162,7 @@ fn test_agregar_mascota() {
         },
     };
     veterinaria.agregar_mascota(mascota.clone());
-    assert_eq!(veterinaria.cola_de_atencion[0]==mascota, true);
+    assert_eq!(veterinaria.cola_de_atencion[0] == mascota, true);
 }
 
 #[test]
@@ -210,7 +208,7 @@ fn test_agregar_mascota_prioridad() {
     veterinaria.agregar_mascota(mascota2.clone());
     veterinaria.agregar_mascota_prioridad(mascota3.clone());
 
-    assert_eq!(veterinaria.cola_de_atencion[0]==mascota3, true);
+    assert_eq!(veterinaria.cola_de_atencion[0] == mascota3, true);
 }
 
 #[test]
@@ -309,7 +307,7 @@ fn test_registrar_atencion() {
         fecha: Fecha::new(1, 1, 2021),
     };
     veterinaria.registrar_atencion(atencion.clone());
-    assert_eq!(veterinaria.atenciones_realizadas[0]==atencion, true);
+    assert_eq!(veterinaria.atenciones_realizadas[0] == atencion, true);
 }
 
 #[test]

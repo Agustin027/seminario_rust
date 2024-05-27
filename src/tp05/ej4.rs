@@ -1,27 +1,15 @@
 use super::fecha::Fecha;
 use std::{collections::HashMap, f32::consts::E};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum Genero {
     Novela,
     Infantil,
     Tecnico,
     Otros,
 }
-impl Genero {
-    fn genero_to_string(&self) -> String {
-        match self {
-            Self::Novela => "Novela".to_string(),
-            Self::Infantil => "Infantil".to_string(),
-            Self::Tecnico => "Tecnico".to_string(),
-            Self::Otros => "Otros".to_string(),
-        }
-    }
-    fn equals(&self, genero: &Genero) -> bool {
-        self.genero_to_string() == genero.genero_to_string()
-    }
-}
-#[derive(Debug, Clone)]
+
+#[derive(Debug, Clone, PartialEq)]
 struct Libro {
     isbn: u32,
     titulo: String,
@@ -30,31 +18,14 @@ struct Libro {
     genero: Genero,
 }
 
-impl Libro {
-    pub fn equals(&self, libro: &Libro) -> bool {
-        self.isbn == libro.isbn
-            && self.titulo == libro.titulo
-            && self.autor == libro.autor
-            && self.numero_de_paginas == libro.numero_de_paginas
-            && self.genero.equals(&libro.genero)
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Cliente {
     nombre: String,
     telefono: u32,
     correo: String,
 }
-impl Cliente {
-    pub fn equals(&self, cliente: &Cliente) -> bool {
-        self.nombre == cliente.nombre
-            && self.telefono == cliente.telefono
-            && self.correo == cliente.correo
-    }
-}
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 struct Prestamo {
     libro: Libro,
     cliente: Cliente,
@@ -101,10 +72,10 @@ impl Biblioteca {
         }
     }
 
-    fn contar_prestamos_cliente(&self, cliente: &Cliente) -> u32 {
+    fn contar_prestamos_cliente(&self, cliente: Cliente) -> u32 {
         let mut contador = 0;
         for prestamo in &self.prestamos {
-            if prestamo.cliente.equals(cliente) && prestamo.estado == true {
+            if prestamo.cliente == cliente && prestamo.estado == true {
                 contador += 1;
             }
         }
@@ -117,7 +88,9 @@ impl Biblioteca {
         cliente: Cliente,
         fecha_vencimiento: Fecha,
     ) -> bool {
-        if self.contar_prestamos_cliente(&cliente) >= 5 && self.obtener_cant_copias(&libro) < 1 {
+        if self.contar_prestamos_cliente(cliente.clone()) >= 5
+            && self.obtener_cant_copias(&libro) < 1
+        {
             return false;
         } else {
             self.decrementar_copias(&libro);
@@ -146,13 +119,12 @@ impl Biblioteca {
         }
         return prestamos;
     }
-    fn devolver_libro(&mut self, libro: &Libro, cliente: Cliente, fecha: Fecha) -> bool {
+    fn devolver_libro(&mut self, libro: Libro, cliente: Cliente, fecha: Fecha) -> bool {
         for i in 0..self.prestamos.len() {
-            if self.prestamos[i].libro.equals(&libro) && self.prestamos[i].cliente.equals(&cliente)
-            {
+            if self.prestamos[i].libro == libro && self.prestamos[i].cliente == cliente {
                 self.prestamos[i].estado = false;
                 self.prestamos[i].fecha_devolucion = Some(fecha);
-                self.incrementar_copias(libro);
+                self.incrementar_copias(&libro);
                 return true;
             }
         }
@@ -176,8 +148,8 @@ fn test_constructor_prestamo() {
     };
     let fecha = Fecha::new(7, 6, 2024);
     let prestamo = Prestamo::new(libro.clone(), cliente.clone(), fecha.clone());
-    assert_eq!(prestamo.libro.equals(&libro), true);
-    assert_eq!(prestamo.cliente.equals(&cliente), true);
+    assert_eq!((prestamo.libro == libro), true);
+    assert_eq!(prestamo.cliente == cliente, true);
     assert_eq!(prestamo.fecha_vencimiento.equals(&fecha), true);
     assert_eq!(prestamo.fecha_devolucion.is_none(), true);
     assert_eq!(prestamo.estado, false);
@@ -272,7 +244,7 @@ fn test_contar_prestamos_cliente() {
     biblioteca.realizar_prestamo(libro.clone(), cliente.clone(), fecha.clone());
 
     // Comprobamos que la función contar_prestamos_cliente devuelva el recuento correcto
-    assert_eq!(biblioteca.contar_prestamos_cliente(&cliente), 3);
+    assert_eq!(biblioteca.contar_prestamos_cliente(cliente), 3);
 }
 
 #[test]
@@ -339,7 +311,7 @@ fn test_prestamos_a_vencer() {
 
     let prestamos = biblioteca.prestamos_a_vencer(fecha);
     assert_eq!(prestamos.len(), 1);
-    assert_eq!(prestamos[0].libro.equals(&libro), true);
+    assert_eq!(prestamos[0].libro == libro, true);
 }
 
 #[test]
@@ -378,7 +350,7 @@ fn test_prestamo_vencidos() {
     let prestamos = biblioteca.prestamos_vencidos(fecha);
 
     assert_eq!(prestamos.len(), 1);
-    assert_eq!(prestamos[0].libro.equals(&libro), true);
+    assert_eq!(prestamos[0].libro == libro, true);
 }
 
 #[test]
@@ -431,17 +403,17 @@ fn test_devolver_libro() {
     biblioteca.realizar_prestamo(libro3.clone(), cliente.clone(), fecha_vencimiento.clone());
 
     assert_eq!(
-        biblioteca.devolver_libro(&libro, cliente.clone(), fecha.clone()),
+        biblioteca.devolver_libro(libro.clone(), cliente.clone(), fecha.clone()),
         true
     );
     assert_eq!(biblioteca.obtener_cant_copias(&libro), 10);
     assert_eq!(
-        biblioteca.devolver_libro(&libro2, cliente.clone(), fecha.clone()),
+        biblioteca.devolver_libro(libro2.clone(), cliente.clone(), fecha.clone()),
         true
     );
     assert_eq!(biblioteca.obtener_cant_copias(&libro2), 8);
     assert_eq!(
-        biblioteca.devolver_libro(&libro3, cliente.clone(), fecha.clone()),
+        biblioteca.devolver_libro(libro3.clone(), cliente.clone(), fecha.clone()),
         true
     );
     assert_eq!(biblioteca.obtener_cant_copias(&libro3), 12);
