@@ -343,3 +343,299 @@ fn test_general() {
         TipoSuscripcion::Basic
     );
 }
+#[test]
+fn test_contador_vec() {
+    let vec = vec![1, 2, 13, 4, 5];
+    assert_eq!(vec.retornar_maximo_medio_de_pago(), MedioPago::Tarjeta(Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    }));
+    assert_eq!(vec.retornar_maximo_subscripcion(), TipoSuscripcion::Super);
+    
+}
+
+#[test]
+fn test_upgrade_sub(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    streaming.upgrade_subscripcion(user.clone());
+
+    user.sub.1.tipo = TipoSuscripcion::Super;
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    user.sub.0 = false;
+    streaming.upgrade_subscripcion(user.clone());
+    user.id = 2;
+    streaming.upgrade_subscripcion(user.clone());
+}
+#[test]
+fn test_downgrade_sub(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    streaming.downgrade_subscripcion(user.clone());
+
+    user.sub.1.tipo = TipoSuscripcion::Basic;
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    user.sub.0 = false;
+    streaming.downgrade_subscripcion(user.clone());
+    user.id = 2;
+    streaming.downgrade_subscripcion(user.clone());
+}
+#[test]
+fn test_cancelar_sub(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    streaming.cancelar_subscripcion(user.clone());
+
+    user.sub.0 = false;
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    user.sub.0 = false;
+    streaming.cancelar_subscripcion(user.clone());
+    user.id = 2;
+    streaming.cancelar_subscripcion(user.clone());
+}
+#[test]
+fn test_medio_de_pago_mas_usado_subs_activas(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado_subs_activas(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+    user.sub.0 = false;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado_subs_activas(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+    user.id = 2;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado_subs_activas(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+}
+#[test]
+fn test_subscripcion_mas_contratada_subs_activas(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    assert_eq!(
+        streaming.subscripcion_mas_contratada_subs_activas(),
+        TipoSuscripcion::Clasic
+    );
+    user.sub.0 = false;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.subscripcion_mas_contratada_subs_activas(),
+        TipoSuscripcion::Clasic
+    );
+    user.id = 2;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.subscripcion_mas_contratada_subs_activas(),
+        TipoSuscripcion::Clasic
+    );
+}
+#[test]
+fn test_medio_de_pago_mas_usado(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+    user.sub.0 = false;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+    user.id = 2;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.medio_de_pago_mas_usado(),
+        MedioPago::Tarjeta(tarjeta.clone())
+    );
+}
+#[test]
+fn test_subscripcion_mas_contratada(){
+    let mut streaming = StreamingRust::new();
+    let tarjeta = Tarjeta {
+        numero: 1234,
+        fecha_vencimiento: Fecha::new(1, 1, 2024),
+        cvv: 123,
+    };
+    let mut user = Usuario {
+        id: 1,
+        sub: (
+            true,
+            Suscripcion {
+                tipo: TipoSuscripcion::Clasic,
+                fecha_inicio: Fecha::new(1, 1, 2024),
+            },
+        ),
+        mediopago: MedioPago::Tarjeta(tarjeta.clone()),
+    };
+    streaming.crear_usuario(
+        1,
+        MedioPago::Tarjeta(tarjeta.clone()),
+        TipoSuscripcion::Clasic,
+    );
+    assert_eq!(streaming.subs.get(&1), Some(&user));
+    assert_eq!(streaming.subs.len(), 1);
+
+    assert_eq!(
+        streaming.subscripcion_mas_contratada(),
+        TipoSuscripcion::Clasic
+    );
+    user.sub.0 = false;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.subscripcion_mas_contratada(),
+        TipoSuscripcion::Clasic
+    );
+    user.id = 2;
+    streaming.cancelar_subscripcion(user.clone());
+    assert_eq!(
+        streaming.subscripcion_mas_contratada(),
+        TipoSuscripcion::Clasic
+    );
+}
