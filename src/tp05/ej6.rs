@@ -1,14 +1,49 @@
 use core::hash;
 use rand::Rng;
-use std::collections::{BTreeMap, HashMap};
-#[derive(Debug, PartialEq, Clone)]
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::{BTreeMap, HashMap},
+    error::Error,
+    fmt::{self, Display},
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Seek, SeekFrom, Write},
+};
+#[derive(Debug)]
+struct MiError {
+    msg: String,
+}
+impl std::error::Error for MiError {}
+
+impl std::fmt::Display for MiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl From<std::io::Error> for MiError {
+    fn from(error: std::io::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for MiError {
+    fn from(error: serde_json::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Usuario {
     nombre: String,
     apellido: String,
     email: String,
     dni: String,
     kyc: bool,
-    balance_crypto: BTreeMap<String, f32>,
+    balance_crypto: BTreeMap<String, f32>, //esto
     balance_fiat: f32,
 }
 trait IniciarBalance {
@@ -78,7 +113,7 @@ impl Usuario {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Criptomoneda {
     nombre: String,
     prefijo: String,
@@ -107,7 +142,7 @@ impl Criptomoneda {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Blockchain {
     nombre: String,
     prefijo: String,
@@ -123,7 +158,7 @@ impl Blockchain {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Hash {
     nombre_blockchain: String,
     hash: i32,
@@ -138,7 +173,7 @@ impl Hash {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Transaccion {
     usuario: Usuario,
     cripto: Criptomoneda,
@@ -295,6 +330,7 @@ enum MedioPago {
     MercadoPago,
     TransfenciaBancaria,
 }
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct XYZ {
     usuarios: BTreeMap<String, Usuario>,
     transacciones: Vec<Transaccion>,
@@ -302,9 +338,27 @@ struct XYZ {
 
 impl XYZ {
     fn new() -> Self {
+        let usuarios = match OpenOptions::new().read(true).open("usuarios.json") {
+            Ok(mut file) => {
+                let mut buf = String::new();
+                file.read_to_string(&mut buf).unwrap();
+                let usuarios: BTreeMap<String, Usuario> = serde_json::from_str(&buf).unwrap();
+                usuarios
+            }
+            Err(_) => BTreeMap::new(),
+        };
+        let transacciones = match OpenOptions::new().read(true).open("transacciones.json") {
+            Ok(mut file) => {
+                let mut buf = String::new();
+                file.read_to_string(&mut buf).unwrap();
+                let transacciones: Vec<Transaccion> = serde_json::from_str(&buf).unwrap();
+                transacciones
+            }
+            Err(_) => Vec::new(),
+        };
         XYZ {
-            usuarios: BTreeMap::new(),
-            transacciones: Vec::new(),
+            usuarios,
+            transacciones,
         }
     }
     fn ingresar_dinero(&mut self, user: Usuario, ingreso: f32) {
@@ -316,6 +370,8 @@ impl XYZ {
             user,
         );
         self.transacciones.push(transaccion);
+        self.guardar_transacciones();
+        self.guardar_usuarios();
     }
 
     fn comprar_cripto(&mut self, user: Usuario, fiat: f32, cripto: Criptomoneda) {
@@ -339,6 +395,8 @@ impl XYZ {
                 cripto.cotizacion() as f64,
             );
             self.transacciones.push(transaccion);
+            self.guardar_transacciones();
+            self.guardar_usuarios();
         }
     }
 
@@ -363,6 +421,8 @@ impl XYZ {
                 cripto.cotizacion() as f64,
             );
             self.transacciones.push(transaccion);
+            self.guardar_transacciones();
+            self.guardar_usuarios();
         }
     }
 
@@ -394,6 +454,8 @@ impl XYZ {
                 cripto.cotizacion() as f64,
             );
             self.transacciones.push(transaccion);
+            self.guardar_transacciones();
+            self.guardar_usuarios();
         }
     }
 
@@ -423,6 +485,8 @@ impl XYZ {
                 cotizacion as f64,
             );
             self.transacciones.push(transaccion);
+            self.guardar_transacciones();
+            self.guardar_usuarios();
         }
     }
 
@@ -439,6 +503,8 @@ impl XYZ {
                 MedioPago::MercadoPago,
             );
             self.transacciones.push(transaccion);
+            self.guardar_transacciones();
+            self.guardar_usuarios();
         }
     }
 
@@ -552,6 +618,26 @@ impl XYZ {
     fn pushear_transaccion(&mut self, t: Transaccion) {
         self.transacciones.push(t);
     }
+    fn guardar_usuarios(&self) {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("usuarios.json")
+            .unwrap();
+        let usuarios = serde_json::to_string(&self.usuarios).unwrap();
+        file.write_all(usuarios.as_bytes());
+    }
+    fn guardar_transacciones(&self) {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("transacciones.json")
+            .unwrap();
+        let transacciones = serde_json::to_string(&self.transacciones).unwrap();
+        file.write_all(transacciones.as_bytes());
+    }
 }
 
 #[test]
@@ -584,6 +670,8 @@ fn test_transacciones() {
         "77777777".to_string(),
     );
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
     let blockchain = Blockchain::new("Bitcoin".to_string(), "BTC".to_string());
 
@@ -693,6 +781,8 @@ fn test_comprar_cripto() {
     usuario.balance_fiat = 1000.0;
     usuario.kyc();
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
     plataforma
         .usuarios
@@ -716,6 +806,8 @@ fn test_vender_cripto() {
     usuario.balance_fiat = 1000.0;
     usuario.kyc();
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     let cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
     usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
     plataforma
@@ -742,6 +834,8 @@ fn test_retirar_cripto() {
     usuario.balance_fiat = 1000.0;
     usuario.kyc();
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     let mut cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
     let blockchain = Blockchain::new("BNB Smart Chain".to_string(), "BEP20".to_string());
     usuario.aumentar_balance_crypto(cripto.clone(), 100.0);
@@ -769,6 +863,8 @@ fn test_recibir_cripto() {
     );
     usuario.kyc();
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     let mut cripto = Criptomoneda::new("Bitcoin".to_string(), "BTC".to_string());
     let blockchain = Blockchain::new("BNB Smart Chain".to_string(), "BEP20".to_string());
     cripto.listado_blockchain.push(blockchain.clone());
@@ -800,6 +896,8 @@ fn test_retirar_fiat() {
     usuario.balance_fiat = 1000.0;
     usuario.kyc();
     let mut plataforma = XYZ::new();
+    plataforma.usuarios.clear();
+    plataforma.transacciones.clear();
     plataforma
         .usuarios
         .insert(usuario.dni.clone(), usuario.clone());

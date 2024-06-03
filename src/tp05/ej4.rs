@@ -1,7 +1,41 @@
 use super::fecha::Fecha;
-use std::{collections::HashMap, f32::consts::E};
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::{HashMap, VecDeque},
+    error::Error,
+    fmt::{self, Display},
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Seek, SeekFrom, Write},
+};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug)]
+struct MiError {
+    msg: String,
+}
+impl std::error::Error for MiError {}
+
+impl std::fmt::Display for MiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl From<std::io::Error> for MiError {
+    fn from(error: std::io::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for MiError {
+    fn from(error: serde_json::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 enum Genero {
     Novela,
     Infantil,
@@ -9,7 +43,7 @@ enum Genero {
     Otros,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Libro {
     isbn: u32,
     titulo: String,
@@ -18,14 +52,14 @@ struct Libro {
     genero: Genero,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Cliente {
     nombre: String,
     telefono: u32,
     correo: String,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Prestamo {
     libro: Libro,
     cliente: Cliente,
@@ -54,6 +88,34 @@ struct Biblioteca {
 }
 
 impl Biblioteca {
+    fn new(nombre: String, direccion: String) -> Biblioteca {
+        let libros_disponibles = match OpenOptions::new()
+            .read(true)
+            .open("libros_disponibles.json")
+        {
+            Ok(mut file) => {
+                let mut vuf = String::new();
+                file.read_to_string(&mut vuf).unwrap();
+                serde_json::from_str(&vuf).unwrap()
+            }
+            Err(_) => HashMap::new(),
+        };
+        let prestamos = match OpenOptions::new().read(true).open("prestamos.json") {
+            Ok(mut file) => {
+                let mut buf = String::new();
+                file.read_to_string(&mut buf).unwrap();
+                serde_json::from_str(&buf).unwrap()
+            }
+            Err(_) => Vec::new(),
+        };
+        Biblioteca {
+            nombre,
+            direccion,
+            libros_disponibles,
+            prestamos,
+        }
+    }
+
     fn obtener_cant_copias(&self, libro: &Libro) -> i32 {
         *self.libros_disponibles.get(&libro.isbn).unwrap_or(&0)
     }
@@ -64,12 +126,14 @@ impl Biblioteca {
                 *cant -= 1;
             }
         }
+        self.guardar_libros_disponibles();
     }
 
     fn incrementar_copias(&mut self, libro: &Libro) {
         if let Some(cant) = self.libros_disponibles.get_mut(&libro.isbn) {
             *cant += 1;
         }
+        self.guardar_libros_disponibles();
     }
 
     fn contar_prestamos_cliente(&self, cliente: Cliente) -> u32 {
@@ -97,6 +161,7 @@ impl Biblioteca {
             let mut prestamo = Prestamo::new(libro, cliente, fecha_vencimiento);
             prestamo.estado = true;
             self.prestamos.push(prestamo);
+            self.guadar_prestamos();
             return true;
         }
     }
@@ -125,10 +190,34 @@ impl Biblioteca {
                 self.prestamos[i].estado = false;
                 self.prestamos[i].fecha_devolucion = Some(fecha);
                 self.incrementar_copias(&libro);
+                self.guadar_prestamos();
                 return true;
             }
         }
         false
+    }
+
+    fn guardar_libros_disponibles(&self) -> Result<(), std::io::Error> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("libros_disponibles.json")?;
+        let json = serde_json::to_string(&self.libros_disponibles)?;
+        file.write_all(json.as_bytes());
+        Ok(())
+    }
+    fn guadar_prestamos(&self) -> Result<(), std::io::Error> {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open("prestamos.json")?;
+
+        let json = serde_json::to_string(&self.prestamos)?;
+        file.write_all(json.as_bytes());
+
+        Ok(())
     }
 }
 

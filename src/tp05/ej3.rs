@@ -1,8 +1,42 @@
 //Falta hacer punto B
-use std::collections::VecDeque; // Import the VecDeque type from the collections module
+use serde::{Deserialize, Serialize};
+use std::{
+    collections::VecDeque,
+    error::Error,
+    fmt::{self, Display},
+    fs::{self, File, OpenOptions},
+    io::{self, Read, Seek, SeekFrom, Write},
+};
 
+#[derive(Debug)]
+struct MiError {
+    msg: String,
+}
+impl std::error::Error for MiError {}
+
+impl std::fmt::Display for MiError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.msg)
+    }
+}
+
+impl From<std::io::Error> for MiError {
+    fn from(error: std::io::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
+
+impl From<serde_json::Error> for MiError {
+    fn from(error: serde_json::Error) -> Self {
+        MiError {
+            msg: error.to_string(),
+        }
+    }
+}
 use super::fecha::Fecha;
-
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Veterinaria {
     nombre: String,
     direccion: String,
@@ -10,7 +44,7 @@ struct Veterinaria {
     cola_de_atencion: VecDeque<Mascota>,
     atenciones_realizadas: Vec<Atencion>,
 }
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 enum TipoAnimal {
     perro,
     gato,
@@ -18,7 +52,7 @@ enum TipoAnimal {
     otros,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Atencion {
     datos_mascota: Mascota,
     diagnostico: String,
@@ -26,7 +60,7 @@ struct Atencion {
     fecha: Fecha,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Mascota {
     nombre: String,
     edad: u32,
@@ -34,7 +68,7 @@ struct Mascota {
     dueño: Dueño,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 struct Dueño {
     nombre: String,
     direccion: String,
@@ -47,8 +81,16 @@ impl Veterinaria {
         direccion: String,
         id: u32,
         cola_de_atencion: VecDeque<Mascota>,
-        atenciones_realizadas: Vec<Atencion>,
     ) -> Self {
+        let atenciones_realizadas = match OpenOptions::new().read(true).open("src/tp05/ej3.json") {
+            Ok(mut file) => {
+                let mut buf = String::new();
+                file.read_to_string(&mut buf).unwrap();
+                serde_json::from_str(&buf).unwrap()
+            }
+            Err(_) => Vec::new(),
+        };
+
         Veterinaria {
             nombre,
             direccion,
@@ -59,7 +101,7 @@ impl Veterinaria {
     }
 
     fn agregar_mascota(&mut self, mascota: Mascota) {
-        self.cola_de_atencion.push_back(mascota)
+        self.cola_de_atencion.push_back(mascota);
     }
     fn agregar_mascota_prioridad(&mut self, mascota: Mascota) {
         self.cola_de_atencion.push_front(mascota)
@@ -80,6 +122,7 @@ impl Veterinaria {
 
     fn registrar_atencion(&mut self, atencion: Atencion) {
         self.atenciones_realizadas.push(atencion);
+        self.guardar_atencion();
     }
     fn buscar_atencion(
         &self,
@@ -106,6 +149,7 @@ impl Veterinaria {
                 break;
             }
         }
+        self.guardar_atencion();
     }
     fn modificar_fecha(&mut self, atencion: Atencion, fecha: Fecha) {
         for i in 0..self.atenciones_realizadas.len() {
@@ -114,6 +158,7 @@ impl Veterinaria {
                 break;
             }
         }
+        self.guardar_atencion();
     }
 
     fn eliminar_atencion(&mut self, atencion: Atencion) {
@@ -123,6 +168,21 @@ impl Veterinaria {
                 break;
             }
         }
+        self.guardar_atencion();
+    }
+
+    fn guardar_atencion(&self) -> Result<(), MiError> {
+        let file_path = "src/tp05/ej3.json";
+
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true) // Esto trunca el archivo a 0 bytes si ya existe
+            .open(&file_path)?;
+
+        let serialized = serde_json::to_string(&self.atenciones_realizadas)?;
+        file.write_all(serialized.as_bytes());
+        Ok(())
     }
 }
 
@@ -133,13 +193,11 @@ fn constructor() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     assert_eq!(veterinaria.nombre, "Veterinaria".to_string());
     assert_eq!(veterinaria.direccion, "Direccion".to_string());
     assert_eq!(veterinaria.id, 1);
     assert!(veterinaria.cola_de_atencion.is_empty());
-    assert!(veterinaria.atenciones_realizadas.is_empty());
 }
 
 #[test]
@@ -149,7 +207,6 @@ fn test_agregar_mascota() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -172,7 +229,6 @@ fn test_agregar_mascota_prioridad() {
         "Direccion".to_string(),
         5, // Capacidad para 5 mascotas
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota1 = Mascota {
         nombre: "Mascota1".to_string(),
@@ -218,7 +274,6 @@ fn test_atender_mascota() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -242,7 +297,6 @@ fn test_eliminar_mascota() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota1 = Mascota {
         nombre: "Mascota1".to_string(),
@@ -288,7 +342,6 @@ fn test_registrar_atencion() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -306,6 +359,8 @@ fn test_registrar_atencion() {
         tratamiento: "Tratamiento".to_string(),
         fecha: Fecha::new(1, 1, 2021),
     };
+    veterinaria.atenciones_realizadas.clear();
+    veterinaria.registrar_atencion(atencion.clone());
     veterinaria.registrar_atencion(atencion.clone());
     assert_eq!(veterinaria.atenciones_realizadas[0] == atencion, true);
 }
@@ -317,7 +372,6 @@ fn test_buscar_atencion() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -354,7 +408,6 @@ fn test_modificar_diagnostico() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -387,7 +440,6 @@ fn test_modificar_fecha() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -405,6 +457,7 @@ fn test_modificar_fecha() {
         tratamiento: "Tratamiento".to_string(),
         fecha: Fecha::new(1, 1, 2024),
     };
+    veterinaria.atenciones_realizadas.clear();
     veterinaria.registrar_atencion(atencion.clone());
     veterinaria.modificar_fecha(atencion.clone(), Fecha::new(2, 2, 2024));
     assert_eq!(
@@ -422,7 +475,6 @@ fn test_eliminar() {
         "Direccion".to_string(),
         1,
         VecDeque::new(),
-        Vec::new(),
     );
     let mascota = Mascota {
         nombre: "Mascota".to_string(),
@@ -440,6 +492,7 @@ fn test_eliminar() {
         tratamiento: "Tratamiento".to_string(),
         fecha: Fecha::new(1, 1, 2024),
     };
+    veterinaria.atenciones_realizadas.clear();
     veterinaria.registrar_atencion(atencion.clone());
     veterinaria.eliminar_atencion(atencion.clone());
     assert!(veterinaria.atenciones_realizadas.is_empty());

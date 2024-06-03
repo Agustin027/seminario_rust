@@ -1,4 +1,5 @@
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Copy)]
+use serde::{Deserialize, Serialize};
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Ord, PartialOrd, Copy, Serialize, Deserialize)]
 pub struct Fecha {
     dia: u32,
     mes: u32,
