@@ -1,1 +1,0 @@
-[{"libro":{"isbn":123,"titulo":"Titulo","autor":"Autor","numero_de_paginas":100,"genero":"Novela"},"cliente":{"nombre":"Cliente","telefono":123,"correo":"correo"},"fecha_vencimiento":{"dia":1,"mes":1,"año":2021},"fecha_devolucion":null,"estado":true}]
